@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ponto Eletrônico</title>
+
+    <!-- Manifest MUST come first -->
+    <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
+
+    <!-- Theme color for Android address bar -->
+    <meta name="theme-color" content="#2c3e50">
+
+    <!-- For iOS (doesn't hurt on Android) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Ponto App">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <!-- For Windows -->
+    <meta name="msapplication-TileColor" content="#2c3e50">
+    <meta name="msapplication-TileImage" content="icon-144.png">
+
+    <!-- Icons -->
+    <link rel="icon" type="image/png" href="icon-192.png">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: #2c3e50;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --info: #3498db;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --gray: #95a5a6;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            min-height: calc(100vh - 40px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .app-header {
+            background: var(--primary);
+            color: white;
+            padding: 25px 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .app-header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .app-header .subtitle {
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        /* Current Time */
+        .current-time-container {
+            padding: 25px 20px;
+            background: var(--light);
+            text-align: center;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .current-date {
+            font-size: 1rem;
+            color: var(--gray);
+            margin-bottom: 5px;
+        }
+
+        .current-time {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary);
+            font-family: 'Courier New', monospace;
+        }
+
+        .status-badge {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 6px 15px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .status-out { background: #f8d7da; color: #721c24; }
+        .status-in { background: #d4edda; color: #155724; }
+        .status-break { background: #fff3cd; color: #856404; }
+
+        /* Controls */
+        .controls-grid {
+            padding: 25px 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        @media (max-width: 400px) {
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .control-btn {
+            padding: 20px 10px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .control-btn i {
+            font-size: 1.8rem;
+        }
+
+        .control-btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-entry { background: var(--success); color: white; }
+        .btn-exit { background: var(--danger); color: white; }
+        .btn-break-start { background: var(--warning); color: white; }
+        .btn-break-end { background: var(--info); color: white; }
+
+        /* Records */
+        .records-section {
+            flex: 1;
+            padding: 0 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            color: var(--primary);
+            margin: 20px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--light);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .records-list {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 200px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            padding: 10px;
+        }
+
+        .record-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: white;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border-left: 4px solid;
+        }
+
+        .record-item.entry { border-left-color: var(--success); }
+        .record-item.exit { border-left-color: var(--danger); }
+        .record-item.break-start { border-left-color: var(--warning); }
+        .record-item.break-end { border-left-color: var(--info); }
+
+        .record-type {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .record-time {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        /* Summary */
+        .summary-section {
+            padding: 0 20px 20px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+        }
+
+        .summary-row.total {
+            font-weight: 700;
+            font-size: 1.3rem;
+            border-top: 2px solid rgba(0,0,0,0.1);
+            padding-top: 15px;
+            margin-top: 10px;
+        }
+
+        .summary-value {
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Bottom actions */
+        .bottom-actions {
+            padding: 20px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-reset {
+            background: var(--gray);
+            color: white;
+        }
+
+        .btn-export {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--primary);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 50px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Install prompt */
+        .install-prompt {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            z-index: 1001;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
+        }
+
+        .install-prompt.show {
+            transform: translateY(0);
+        }
+
+        .install-btn {
+            background: white;
+            color: var(--primary);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        .close-install {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1><i class="fas fa-clock"></i> Ponto Android</h1>
+            <p class="subtitle">Controle de horas trabalhadas</p>
+        </header>
+
+        <!-- Current Time -->
+        <section class="current-time-container">
+            <div class="current-date" id="current-date">Carregando...</div>
+            <div class="current-time" id="current-time">00:00:00</div>
+            <div class="status-badge status-out" id="status-badge">Fora do trabalho</div>
+        </section>
+
+        <!-- Controls -->
+        <section class="controls-grid">
+            <button class="control-btn btn-entry" id="entry-btn">
+                <i class="fas fa-sign-in-alt"></i>
+                <span>ENTRADA</span>
+            </button>
+
+            <button class="control-btn btn-exit" id="exit-btn" disabled>
+                <i class="fas fa-sign-out-alt"></i>
+                <span>SAÍDA</span>
+            </button>
+
+            <button class="control-btn btn-break-start" id="break-start-btn" disabled>
+                <i class="fas fa-coffee"></i>
+                <span>INTERVALO</span>
+            </button>
+
+            <button class="control-btn btn-break-end" id="break-end-btn" disabled>
+                <i class="fas fa-undo"></i>
+                <span>RETORNAR</span>
+            </button>
+        </section>
+
+        <!-- Records -->
+        <section class="records-section">
+            <h2 class="section-title"><i class="fas fa-history"></i> Registros de Hoje</h2>
+            <div class="records-list" id="records-list">
+                <div class="empty-state">
+                    <i class="fas fa-clipboard-list"></i>
+                    <p>Nenhum registro ainda</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Summary -->
+        <section class="summary-section">
+            <h2 class="section-title"><i class="fas fa-chart-bar"></i> Resumo do Dia</h2>
+            <div class="summary-card">
+                <div class="summary-row">
+                    <span>Tempo trabalhado:</span>
+                    <span class="summary-value" id="total-worked">00:00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tempo de intervalo:</span>
+                    <span class="summary-value" id="total-break">00:00</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Saldo do dia:</span>
+                    <span class="summary-value" id="daily-balance">00:00</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bottom Actions -->
+        <div class="bottom-actions">
+            <button class="action-btn btn-reset" id="reset-btn">
+                <i class="fas fa-redo"></i>
+                Reiniciar Dia
+            </button>
+            <button class="action-btn btn-export" id="export-btn">
+                <i class="fas fa-file-export"></i>
+                Exportar
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Install Prompt (will be shown automatically on Android) -->
+    <div class="install-prompt" id="install-prompt">
+        <button class="close-install" id="close-install">&times;</button>
+        <p><i class="fas fa-download"></i> Instale o Ponto Eletrônico no seu celular!</p>
+        <p style="font-size: 0.9rem; opacity: 0.8;">Funciona offline e como um app normal</p>
+        <button class="install-btn" id="install-btn">Instalar App</button>
+    </div>
+
+    <script>
+        // Variáveis globais
+        let records = [];
+        let currentStatus = 'out'; // 'out', 'in', 'break'
+        let deferredPrompt = null;
+
+        // Elementos DOM
+        const currentTimeEl = document.getElementById('current-time');
+        const currentDateEl = document.getElementById('current-date');
+        const statusBadgeEl = document.getElementById('status-badge');
+        const entryBtn = document.getElementById('entry-btn');
+        const exitBtn = document.getElementById('exit-btn');
+        const breakStartBtn = document.getElementById('break-start-btn');
+        const breakEndBtn = document.getElementById('break-end-btn');
+        const recordsListEl = document.getElementById('records-list');
+        const totalWorkedEl = document.getElementById('total-worked');
+        const totalBreakEl = document.getElementById('total-break');
+        const dailyBalanceEl = document.getElementById('daily-balance');
+        const resetBtn = document.getElementById('reset-btn');
+        const exportBtn = document.getElementById('export-btn');
+        const toastEl = document.getElementById('toast');
+        const installPromptEl = document.getElementById('install-prompt');
+        const installBtn = document.getElementById('install-btn');
+        const closeInstallBtn = document.getElementById('close-install');
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+
+            loadRecords();
+            updateUI();
+            setupEventListeners();
+            checkIfAppIsInstalled();
+
+            // Mostrar prompt de instalação após 5 segundos
+            setTimeout(showInstallPrompt, 5000);
+        });
+
+        // Configurar event listeners
+        function setupEventListeners() {
+            entryBtn.addEventListener('click', () => registerPoint('entry'));
+            exitBtn.addEventListener('click', () => registerPoint('exit'));
+            breakStartBtn.addEventListener('click', () => registerPoint('break-start'));
+            breakEndBtn.addEventListener('click', () => registerPoint('break-end'));
+            resetBtn.addEventListener('click', resetDay);
+            exportBtn.addEventListener('click', exportData);
+            installBtn.addEventListener('click', installApp);
+            closeInstallBtn.addEventListener('click', hideInstallPrompt);
+
+            // Evento para instalação de PWA
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+            });
+
+            // Evento para quando o app é instalado
+            window.addEventListener('appinstalled', () => {
+                deferredPrompt = null;
+                hideInstallPrompt();
+                showToast('App instalado com sucesso!');
+            });
+        }
+
+        // Atualizar data e hora
+        function updateDateTime() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('pt-BR', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            const timeStr = now.toLocaleTimeString('pt-BR');
+
+            currentDateEl.textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+            currentTimeEl.textContent = timeStr;
+        }
+
+        // Carregar registros do localStorage
+        function loadRecords() {
+            const today = new Date().toLocaleDateString('pt-BR');
+            const savedRecords = localStorage.getItem('pontoRecords');
+            const savedDate = localStorage.getItem('pontoRecordsDate');
+
+            if (savedRecords && savedDate === today) {
+                records = JSON.parse(savedRecords).map(record => ({
+                    ...record,
+                    time: new Date(record.time)
+                }));
+            } else {
+                records = [];
+                localStorage.setItem('pontoRecordsDate', today);
+            }
+
+            // Determinar status atual
+            updateCurrentStatus();
+        }
+
+        // Determinar status atual
+        function updateCurrentStatus() {
+            if (records.length === 0) {
+                currentStatus = 'out';
+                return;
+            }
+
+            const lastRecord = records[records.length - 1];
+            switch(lastRecord.type) {
+                case 'entry': currentStatus = 'in'; break;
+                case 'break-start': currentStatus = 'break'; break;
+                case 'break-end': currentStatus = 'in'; break;
+                case 'exit': currentStatus = 'out'; break;
+                default: currentStatus = 'out';
+            }
+        }
+
+        // Salvar registros
+        function saveRecords() {
+            const today = new Date().toLocaleDateString('pt-BR');
+            localStorage.setItem('pontoRecords', JSON.stringify(records));
+            localStorage.setItem('pontoRecordsDate', today);
+        }
+
+        // Registrar ponto
+        function registerPoint(type) {
+            const now = new Date();
+            const record = {
+                type: type,
+                time: now,
+                timestamp: now.getTime()
+            };
+
+            records.push(record);
+
+            // Atualizar status
+            updateCurrentStatus();
+
+            // Salvar e atualizar UI
+            saveRecords();
+            updateUI();
+
+            // Mostrar confirmação
+            let message = '';
+            switch(type) {
+                case 'entry': message = 'Entrada registrada!'; break;
+                case 'exit': message = 'Saída registrada!'; break;
+                case 'break-start': message = 'Intervalo iniciado!'; break;
+                case 'break-end': message = 'Retorno ao trabalho!'; break;
+            }
+            showToast(message);
+
+            // Vibração (se suportado)
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }
+
+        // Atualizar UI completa
+        function updateUI() {
+            updateStatusBadge();
+            updateButtons();
+            updateRecordsList();
+            updateSummary();
+        }
+
+        // Atualizar badge de status
+        function updateStatusBadge() {
+            let text = '';
+            let className = '';
+
+            switch(currentStatus) {
+                case 'out':
+                    text = 'Fora do trabalho';
+                    className = 'status-out';
+                    break;
+                case 'in':
+                    text = 'No trabalho';
+                    className = 'status-in';
+                    break;
+                case 'break':
+                    text = 'Em intervalo';
+                    className = 'status-break';
+                    break;
+            }
+
+            statusBadgeEl.textContent = text;
+            statusBadgeEl.className = `status-badge ${className}`;
+        }
+
+        // Atualizar botões
+        function updateButtons() {
+            entryBtn.disabled = currentStatus !== 'out';
+            exitBtn.disabled = currentStatus !== 'in';
+            breakStartBtn.disabled = currentStatus !== 'in';
+            breakEndBtn.disabled = currentStatus !== 'break';
+        }
+
+        // Atualizar lista de registros
+        function updateRecordsList() {
+            if (records.length === 0) {
+                recordsListEl.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                        <p>Nenhum registro ainda</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Ordenar do mais recente para o mais antigo
+            const sortedRecords = [...records].sort((a, b) => b.timestamp - a.timestamp);
+
+            recordsListEl.innerHTML = '';
+
+            sortedRecords.forEach(record => {
+                const timeStr = record.time.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+
+                let typeText = '';
+                let typeClass = '';
+
+                switch(record.type) {
+                    case 'entry':
+                        typeText = 'Entrada';
+                        typeClass = 'entry';
+                        break;
+                    case 'exit':
+                        typeText = 'Saída';
+                        typeClass = 'exit';
+                        break;
+                    case 'break-start':
+                        typeText = 'Intervalo Início';
+                        typeClass = 'break-start';
+                        break;
+                    case 'break-end':
+                        typeText = 'Intervalo Fim';
+                        typeClass = 'break-end';
+                        break;
+                }
+
+                const recordItem = document.createElement('div');
+                recordItem.className = `record-item ${typeClass}`;
+                recordItem.innerHTML = `
+                    <div class="record-type">${typeText}</div>
+                    <div class="record-time">${timeStr}</div>
+                `;
+
+                recordsListEl.appendChild(recordItem);
+            });
+        }
+
+        // Atualizar resumo
+        function updateSummary() {
+            if (records.length === 0) {
+                totalWorkedEl.textContent = '00:00';
+                totalBreakEl.textContent = '00:00';
+                dailyBalanceEl.textContent = '00:00';
+                return;
+            }
+
+            let totalWorkedMs = 0;
+            let totalBreakMs = 0;
+
+            // Ordenar por timestamp
+            const sortedRecords = [...records].sort((a, b) => a.timestamp - b.timestamp);
+
+            let lastEntryTime = null;
+            let lastBreakStartTime = null;
+
+            for (const record of sortedRecords) {
+                if (record.type === 'entry') {
+                    lastEntryTime = record.time;
+                } else if (record.type === 'exit' && lastEntryTime) {
+                    totalWorkedMs += record.time - lastEntryTime;
+                    lastEntryTime = null;
+                } else if (record.type === 'break-start' && lastEntryTime) {
+                    totalWorkedMs += record.time - lastEntryTime;
+                    lastBreakStartTime = record.time;
+                    lastEntryTime = null;
+                } else if (record.type === 'break-end' && lastBreakStartTime) {
+                    totalBreakMs += record.time - lastBreakStartTime;
+                    lastEntryTime = record.time;
+                    lastBreakStartTime = null;
+                }
+            }
+
+            // Se ainda estiver trabalhando
+            if (lastEntryTime) {
+                totalWorkedMs += new Date() - lastEntryTime;
+            }
+
+            // Converter para formato legível
+            const formatTime = (ms) => {
+                const totalSeconds = Math.floor(ms / 1000);
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            };
+
+            totalWorkedEl.textContent = formatTime(totalWorkedMs);
+            totalBreakEl.textContent = formatTime(totalBreakMs);
+
+            // Calcular saldo (8h de trabalho esperadas, 1h de intervalo)
+            const expectedWorkMs = 8 * 60 * 60 * 1000;
+            const balanceMs = totalWorkedMs - expectedWorkMs;
+
+            dailyBalanceEl.textContent = formatTime(Math.abs(balanceMs));
+
+            // Adicionar sinal
+            if (balanceMs > 0) {
+                dailyBalanceEl.textContent = '+' + dailyBalanceEl.textContent;
+                dailyBalanceEl.style.color = '#27ae60';
+            } else if (balanceMs < 0) {
+                dailyBalanceEl.textContent = '-' + dailyBalanceEl.textContent;
+                dailyBalanceEl.style.color = '#e74c3c';
+            } else {
+                dailyBalanceEl.style.color = '#2c3e50';
+            }
+        }
+
+        // Reiniciar dia
+        function resetDay() {
+            if (confirm('Tem certeza que deseja reiniciar o dia? Todos os registros serão apagados.')) {
+                records = [];
+                updateCurrentStatus();
+                saveRecords();
+                updateUI();
+                showToast('Dia reiniciado com sucesso!');
+            }
+        }
+
+        // Exportar dados
+        function exportData() {
+            if (records.length === 0) {
+                showToast('Nenhum dado para exportar');
+                return;
+            }
+
+            let csv = 'Tipo,Hora,Data\n';
+
+            records.forEach(record => {
+                const typeMap = {
+                    'entry': 'Entrada',
+                    'exit': 'Saída',
+                    'break-start': 'Intervalo Início',
+                    'break-end': 'Intervalo Fim'
+                };
+
+                const date = record.time.toLocaleDateString('pt-BR');
+                const time = record.time.toLocaleTimeString('pt-BR');
+
+                csv += `${typeMap[record.type]},${time},${date}\n`;
+            });
+
+            // Criar e baixar arquivo
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ponto_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            showToast('Dados exportados com sucesso!');
+        }
+
+        // Mostrar toast
+        function showToast(message) {
+            toastEl.textContent = message;
+            toastEl.classList.add('show');
+
+            setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, 3000);
+        }
+
+        // Instalar app
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('Usuário aceitou a instalação');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+
+        // Mostrar prompt de instalação
+        function showInstallPrompt() {
+            // Só mostra se não estiver já instalado e se for em mobile
+            if (window.matchMedia('(display-mode: standalone)').matches ||
+                navigator.standalone ||
+                localStorage.getItem('pontoInstallPromptShown')) {
+                return;
+            }
+
+            // Mostra principalmente em dispositivos móveis
+            if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                installPromptEl.classList.add('show');
+                localStorage.setItem('pontoInstallPromptShown', 'true');
+            }
+        }
+
+        // Esconder prompt de instalação
+        function hideInstallPrompt() {
+            installPromptEl.classList.remove('show');
+        }
+
+        // Verificar se o app já está instalado
+        function checkIfAppIsInstalled() {
+            if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+                console.log('App já está instalado');
+            }
+        }
+    </script>
+</body>
+</html>
